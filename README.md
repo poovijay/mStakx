@@ -68,7 +68,10 @@ network-conf: allows to configure routes used by the pods to communicate.
 kube-dns: allows access to services directly by their name from within the cluster.
 
 
-Usage -
+
+
+
+#Usage -
 Put your adc.json in the app dir (See Gcloud account for details on this file).
 
 Adapt profile to match desired region, zone and project.
