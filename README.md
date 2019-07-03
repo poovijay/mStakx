@@ -9,6 +9,8 @@ cd k8s-on-gce
 
 Configure Google cloud credentials. Download the adc.json file and copy it to the app directory.
 
+
+
 Modify the profile file to define the project, region, and Google Cloud zone to use:
 
 export GCLOUD_PROJECT=mstakx-test
@@ -16,6 +18,8 @@ export GCLOUD_PROJECT=mstakx-test
 export GCLOUD_REGION= # Example us-west1
 
 export GCLOUD_ZONE= # Example us-west1-c
+
+
 
 
 Run the command ./in.sh which will launch a docker container with the necessary tools.
