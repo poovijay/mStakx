@@ -71,6 +71,10 @@ kube-dns: allows access to services directly by their name from within the clust
 
 
 
+
+
+
+
 #Usage -
 Put your adc.json in the app dir (See Gcloud account for details on this file).
 
