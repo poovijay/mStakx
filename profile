@@ -5,8 +5,8 @@ source /root/google-cloud-sdk/path.bash.inc
 
 # For terraform
 export GCLOUD_PROJECT=k8s-hw-1
-export GCLOUD_REGION=europe-west1
-export GCLOUD_ZONE=europe-west1-b
+export GCLOUD_REGION=us-west1
+export GCLOUD_ZONE=us-west1-c
 
 # For ansible
 export GCE_PROJECT=$GCLOUD_PROJECT
