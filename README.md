@@ -10,8 +10,11 @@ cd k8s-on-gce
 Configure Google cloud credentials. Download the adc.json file and copy it to the app directory.
 
 Modify the profile file to define the project, region, and Google Cloud zone to use:
+
 export GCLOUD_PROJECT=mstakx-test
+
 export GCLOUD_REGION= # Example us-west1
+
 export GCLOUD_ZONE= # Example us-west1-c
 
 
@@ -24,7 +27,7 @@ Run ./create.sh to roll out the steps necessary to create the cluster.
 A ssh key pair is created to access the VMs.
 
 
-Terraform is used to create the following resources - Virtual machines, Network configuration, Firewall rules, Load balancer to access the cluster
+Terraform is used to create the following resources - Virtual machines, Network configuration, Firewall rules, Load balancer to access the cluster.
 
 
 Description of these resources is present in the file provisioning / kube.tf
