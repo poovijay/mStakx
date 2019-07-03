@@ -66,3 +66,13 @@ network-conf: allows to configure routes used by the pods to communicate.
 
 
 kube-dns: allows access to services directly by their name from within the cluster.
+
+
+Usage -
+Put your adc.json in the app dir (See Gcloud account for details on this file).
+
+Adapt profile to match desired region, zone and project.
+
+Launch ./in.sh, it will build a docker image and launch a container with all needed tools.
+
+In the container, launch ./create.sh and wait for ~10mins.
