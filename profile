@@ -4,7 +4,7 @@ source /root/google-cloud-sdk/completion.bash.inc
 source /root/google-cloud-sdk/path.bash.inc
 
 # For terraform
-export GCLOUD_PROJECT=k8s-hw-1
+export GCLOUD_PROJECT=mstakx-test
 export GCLOUD_REGION=us-west1
 export GCLOUD_ZONE=us-west1-c
 
