@@ -1,0 +1,63 @@
+* Create a application Namespace 
+
+1. vi namespace-application.json
+
+2. Add the following code -
+
+{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "name": "application",
+    "labels": {
+      "name": "application"
+    }
+  }
+}
+
+3. kubectl create -f namespace-application.json
+
+Verify - kubectl get namespaces --show-labels
+
+[root@oc2717564268 ~]# kubectl get namespaces --show-labels
+NAME          STATUS   AGE     LABELS
+application   Active   36s     name=application
+default       Active   2d21h   <none>
+kube-public   Active   2d21h   <none>
+kube-system   Active   2d21h   <none>
+[root@oc2717564268 ~]# 
+
+
+* Deploy Mediawiki application in application Namespace
+
+Installing system requirements to deploy mediawiki application -
+
+sudo apt-get install php php-apcu php-intl php-mbstring php-xml mariadb-server apache2
+
+Clone the MediaWiki core repository - git clone https://gerrit.wikimedia.org/r/mediawiki/core.git --branch REL1_33 mediawiki
+
+The release branches have a bunch of Git submodules in them, for commonly-used extensions and skins (the master branch does not have these). To update the submodules, run:
+
+cd mediawiki
+git submodule update --init
+
+kubectl run mediawiki --image=mediawiki --env="POD_NAMESPACE=application"
+
+root@controller-1:~/mediawiki# kubectl run mediawiki --image=mediawiki --env="POD_NAMESPACE=application"
+kubectl run --generator=deployment/apps.v1beta1 is DEPRECATED and will be removed in a future version. Use kubectl create instead.
+deployment.apps/mediawiki created
+
+root@controller-1:~/mediawiki# kubectl get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+mediawiki-76895fcc6c-rfgcf   1/1     Running   0          76s
+root@controller-1:~/mediawiki# 
+
+root@controller-1:~/mediawiki# kubectl expose deployment mediawiki --type="NodePort" --port=3000
+service/mediawiki exposed
+root@controller-1:~/mediawiki# 
+
+root@controller-1:~/mediawiki# kubectl get service mediawiki
+NAME        TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+mediawiki   NodePort   10.32.0.170   <none>        3000:31652/TCP   65s
+root@controller-1:~/mediawiki# 
+
