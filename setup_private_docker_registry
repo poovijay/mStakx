@@ -1,0 +1,103 @@
+Steps -
+
+1. Create a certificate directory "/docker_data/certs" to hold the TLS certificate.
+2. Generate a SSL/TLS certificate to secure private docker registry.
+3. Create a directory to store docker images "/docker_data/images".
+4. Run a docker registry container in docker host "docker-registry".
+5. Pull required docker images to docker host "docker-registry" from docker hub.
+6. Push those downloaded docker images to docker registry container.
+7. Configure docker clients to use certificates.
+8. Configure docker clients to push and pull docker images to private docker registry.
+
+Command to generate the certificate -
+
+openssl req \
+  -newkey rsa:4096 -nodes -sha256 -keyout /docker_data/certs/domain.key \
+  -x509 -days 365 -out /docker_data/certs/domain.crt
+
+[root@oc2717564268 ~]# openssl req \
+>   -newkey rsa:4096 -nodes -sha256 -keyout /docker_data/certs/domain.key \
+>   -x509 -days 365 -out /docker_data/certs/domain.crt
+Generating a 4096 bit RSA private key
+..................++
+.........................................++
+writing new private key to '/docker_data/certs/domain.key'
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:
+State or Province Name (full name) []:
+Locality Name (eg, city) [Default City]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:oc2717564268.ibm.com
+Email Address []:
+
+The certificates are generated -
+
+[root@oc2717564268 ~]# ll /docker_data/certs/
+total 8
+-rw-r--r--. 1 root root 1996 Jul  6 19:14 domain.crt
+-rw-r--r--. 1 root root 3272 Jul  6 19:14 domain.key
+[root@oc2717564268 ~]# 
+
+Create a directory to store docker images -
+
+mkdir -p /docker_data/images
+
+To download the image in order to make the host as the private docker registry - docker search registry
+
+[root@oc2717564268 ~]# docker search registry
+INDEX       NAME                                          DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+docker.io   docker.io/registry                            The Docker Registry 2.0 implementation for...   2606      [OK]       
+
+Run the image to create private docker registry -
+
+docker run -d -p 5000:5000 \
+-v /docker_data/images:/var/lib/registry \
+-v /docker_data/certs:/certs \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+--restart on-failure \
+--name myregistry \
+docker.io/registry
+
+Verify -
+
+[root@oc2717564268 ~]# docker ps -a
+CONTAINER ID        IMAGE                COMMAND                  CREATED             STATUS                      PORTS                                      NAMES
+4b7a4c686042        docker.io/registry   "/entrypoint.sh /e..."   4 seconds ago       Up Less than a second       0.0.0.0:5000->5000/tcp                     myregistry
+
+
+Pull the required docker images from docker hub to the localhost and then push the images to docker registry container.
+
+Rename docker images before pushing the images to docker registry container - docker tag centos:latest localhost:5000/my-centos
+
+docker push localhost:5000/my-centos
+
+Configure docker clients to use the certificate -
+
+[root@oc2717564268 certs]# gcloud compute scp domain.crt controller-1:/root/
+domain.crt                                                                                                                                                                100% 1996     6.4KB/s   00:00    
+
+[root@oc2717564268 certs]# gcloud compute scp domain.crt controller-0:/root/
+domain.crt                                                                                                                                                                100% 1996     6.3KB/s   00:00    
+[root@oc2717564268 certs]# 
+
+On all docker clients -
+
+Login to the docker clients, in our case, the cluster master nodes, and create a directory -
+
+mkdir -p /etc/docker/certs.d/docker-registry.oc2717564268.ibm.com:5000/
+
+Copy domain.crt from /root to /etc/docker/certs.d/docker-registry.oc2717564268.ibm.com:5000/
+
+cp -rp domain.crt /etc/docker/certs.d/docker-registry.oc2717564268.ibm.com:5000/
+
+
+
