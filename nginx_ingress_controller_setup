@@ -1,0 +1,212 @@
+Step 1 - Creating a default backend to be used by the nginx-ingress-controller
+
+The default backend satisfies the following two requirements :
+
+-> serves a 404 page at /
+-> serves 200 on a /healthz
+
+The nginx-ingress-controller project has an example default backend.
+
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: default-http-backend
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: default-http-backend
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: default-http-backend
+        # Any image is permissable as long as:
+        # 1. It serves a 404 page at /
+        # 2. It serves 200 on a /healthz endpoint
+        image: gcr.io/google_containers/defaultbackend:1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 10m
+            memory: 20Mi
+          requests:
+            cpu: 10m
+            memory: 20Mi
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: default-http-backend
+spec:
+  selector:
+    app: default-http-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: NodePort
+
+
+kubectl create -f default-backend.yaml
+
+Step 2 - Creating secrets to specify the SSL certificate for Nginx
+
+Create a self-signed certificate using OpenSSL. The common name specified while generating the SSL certificate should be used as the host in your ingress config. We create secrets for the given key, certificate and dhparam files. Use corresponding file names for the key, certificate and dhparam.
+
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /docker_data/certs/domain.key -out /docker_data/certs/domain.crt
+
+While OpenSSL is used, a strong Diffie-Hellman group is also created for negotiating Perfect Forward Secrecy with clients.
+
+openssl dhparam -out /docker_data/certs/dhparam.pem 2048
+
+kubectl create secret tls tls-certificate --key domain.key --cert domain.crt
+
+kubectl create secret generic tls-dhparam --from-file=dhparam.pem
+
+Step 3 - Enable ingress on GCP
+
+The following config file directs traffic to mediawiki application -
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: basic-ingress
+spec:
+  backend:
+    serviceName: mediawiki
+    servicePort: 8080
+
+To deploy this Ingress resource -
+
+kubectl apply -f basic-ingress.yaml
+
+The Ingress controller running in your cluster is responsible for creating an HTTP(S) Load Balancer to route all external HTTP traffic (on port 80) to the mediawiki NodePort Service you exposed.
+
+Visit your application - kubectl get ingress basic-ingress
+
+Point browser to the external IP address of the application and see a plain text HTTP response.
+
+Step 4: Setting up the nginx-ingress-controller
+
+Create a service for the controller. The service is of type LoadBalancer so that it is exposed outside the cluster.
+
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata: 
+  name: nginx-ingress-controller
+spec: 
+  replicas: 1
+  revisionHistoryLimit: 3
+  template: 
+    metadata: 
+      labels: 
+        k8s-app: nginx-ingress-lb
+    spec: 
+      containers: 
+        - args: 
+            - /nginx-ingress-controller
+            - "--default-backend-service=$(POD_NAMESPACE)/default-http-backend"
+            - "--default-ssl-certificate=$(POD_NAMESPACE)/tls-certificate"
+          env: 
+            - name: POD_NAME
+              valueFrom: 
+                fieldRef: 
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom: 
+                fieldRef: 
+                  fieldPath: metadata.namespace
+          image: "gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.5"
+          imagePullPolicy: Always
+          livenessProbe: 
+            httpGet: 
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          name: nginx-ingress-controller
+          ports: 
+            - containerPort: 80
+              name: http
+              protocol: TCP
+            - containerPort: 443
+              name: https
+              protocol: TCP
+          volumeMounts: 
+            - mountPath: /etc/nginx-ssl/dhparam
+              name: tls-dhparam-vol
+      terminationGracePeriodSeconds: 60
+      volumes: 
+        - name: tls-dhparam-vol
+          secret: 
+            secretName: tls-dhparam
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-ingress
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  - name: https
+    port: 443
+    targetPort: https
+  selector:
+    k8s-app: nginx-ingress-lb
+
+Create the controller by running: kubectl create -f nginx-controller.yaml
+
+Step 5: Configure Ingress rules
+
+Provide the forwarding rules to the ingress.
+
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: mediawiki-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/ssl-services: "mediawiki"
+spec:
+  tls:
+    - hosts:
+      - api.sample.com
+      secretName: tls-certificate
+  rules:
+  - host: api.sample.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: mediawiki
+          servicePort: 8080
+
+kubectl create -f ingress.yaml
+
+[root@oc2717564268 ~]# kubectl get svc
+NAME                   TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)                      AGE
+default-http-backend   NodePort       10.32.0.149   <none>        80:30799/TCP                 14m
+kubernetes             ClusterIP      10.32.0.1     <none>        443/TCP                      3d21h
+mediawiki              NodePort       10.32.0.170   <none>        3000:31652/TCP               23h
+nginx-ingress          LoadBalancer   10.32.0.163   <none>     80:30127/TCP,443:30152/TCP   61s
+[root@oc2717564268 ~]# 
+
+
+
+
