@@ -1,0 +1,119 @@
+Run the following command to download and extract the latest Istio release automatically:
+
+
+[root@oc2717564268 ~]# curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.2.2 sh -
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+100  2140  100  2140    0     0    836      0  0:00:02  0:00:02 --:--:--  216k
+Downloading istio-1.2.2 from https://github.com/istio/istio/releases/download/1.2.2/istio-1.2.2-linux.tar.gz ...  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   614    0   614    0     0   1197      0 --:--:-- --:--:-- --:--:--  1199
+100 20.2M  100 20.2M    0     0  2148k      0  0:00:09  0:00:09 --:--:-- 3532k
+Istio 1.2.2 Download Complete!
+
+Istio has been successfully downloaded into the istio-1.2.2 folder on your system.
+
+Next Steps:
+See https://istio.io/docs/setup/kubernetes/install/ to add Istio to your Kubernetes cluster.
+
+To configure the istioctl client tool for your workstation,
+add the /root/istio-1.2.2/bin directory to your environment path variable with:
+	 export PATH="$PATH:/root/istio-1.2.2/bin"
+
+Begin the Istio pre-installation verification check by running:
+	 istioctl verify-install 
+
+Need more information? Visit https://istio.io/docs/setup/kubernetes/install/ 
+[root@oc2717564268 ~]# 
+
+Verify if the installation was successful - istioctl verify-install
+
+Got the below error message - Istio cannot be installed because the Istio namespace 'istio-system' is already in use
+
+Got the namespace deleted since it was not used.
+
+[root@oc2717564268 ~]# kubectl delete namespace istio-system
+
+Installed the software again.
+
+cd istio-1.2.2
+
+Add the istioctl client to your PATH environment variable - export PATH=$PWD/bin:$PATH
+
+Enable auto completion option.
+
+Configure Kiali - 
+
+[root@oc2717564268 ~]# bash <(curl -L https://git.io/getLatestKialiOperator) --operator-install-kiali false
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0
+ 35 43905   35 15542    0     0   1645      0  0:00:26  0:00:09  0:00:17   595Using 'kubectl' located here: /usr/local/bin/kubectl
+=== UNINSTALL SETTINGS ===
+UNINSTALL_EXISTING_KIALI=
+UNINSTALL_EXISTING_OPERATOR=
+UNINSTALL_MODE=
+=== UNINSTALL SETTINGS ===
+envsubst is here: /bin/envsubst
+Using downloader: wget -q -O -
+100 43905  100 43905    0     0   4375      0  0:00:10  0:00:10 --:--:--  7867
+Will use the last Kiali operator release: v1.1.0
+Will use the last Kiali operator release: v1.1.0
+=== OPERATOR SETTINGS ===
+OPERATOR_IMAGE_NAME=quay.io/kiali/kiali-operator
+OPERATOR_IMAGE_PULL_POLICY=IfNotPresent
+OPERATOR_IMAGE_VERSION=v1.1.0
+OPERATOR_INSTALL_KIALI=false
+OPERATOR_NAMESPACE=kiali-operator
+OPERATOR_SKIP_WAIT=false
+OPERATOR_VERSION_LABEL=v1.1.0
+OPERATOR_WATCH_NAMESPACE=kiali-operator
+OPERATOR_ROLE_CLUSTERROLES=# The operator does not have permission to manage cluster roles
+OPERATOR_ROLE_CLUSTERROLEBINDINGS=# The operator does not have permission to manage cluster role bindings
+=== OPERATOR SETTINGS ===
+Deploying Kiali operator to namespace [kiali-operator]
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/namespace.yaml] to namespace [kiali-operator]
+namespace/kiali-operator created
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/crd.yaml] to namespace [kiali-operator]
+customresourcedefinition.apiextensions.k8s.io/monitoringdashboards.monitoring.kiali.io created
+customresourcedefinition.apiextensions.k8s.io/kialis.kiali.io created
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/service_account.yaml] to namespace [kiali-operator]
+serviceaccount/kiali-operator created
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/role.yaml] to namespace [kiali-operator]
+clusterrole.rbac.authorization.k8s.io/kiali-operator created
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/role_binding.yaml] to namespace [kiali-operator]
+clusterrolebinding.rbac.authorization.k8s.io/kiali-operator created
+Applying yaml from URL via: [wget -q -O - https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/operator.yaml] to namespace [kiali-operator]
+deployment.apps/kiali-operator created
+Waiting for the operator to start.......
+The Kiali operator is installed!
+==========================================
+Skipping the automatic Kiali installation.
+To install Kiali, create a Kiali custom resource in the namespace [kiali-operator].
+An example Kiali CR with all settings documented can be found here:
+  https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/kiali/kiali_cr.yaml
+To install Kiali with all default settings, you can run:
+  /usr/local/bin/kubectl apply -n kiali-operator -f https://raw.githubusercontent.com/kiali/kiali/v1.1.0/operator/deploy/kiali/kiali_cr.yaml
+Do not forget to create a secret if you wish to use an auth strategy of 'login' (This is
+the default setting when installing in Kubernetes but not OpenShift).
+An example would be:
+  /usr/local/bin/kubectl create secret generic kiali -n istio-system --from-literal 'username=admin' --from-literal 'passphrase=admin'
+==========================================
+Done.
+[root@oc2717564268 ~]# 
+
+Setup port forwarding -
+
+kubectl port-forward svc/kiali 20001:20001 -n istio-system
+
+Configure zipkin -
+
+docker run -d -p 9411:9411 openzipkin/zipkin
+
+[root@oc2717564268 ~]# docker ps
+CONTAINER ID        IMAGE               COMMAND                CREATED             STATUS              PORTS                                      NAMES
+b58997c2a753        openzipkin/zipkin   "/busybox/sh run.sh"   13 seconds ago      Up 12 seconds       9410/tcp, 0.0.0.0:9411->9411/tcp           adoring_meninsky
+3c3d66dadffd        rancher/rancher     "entrypoint.sh"        2 days ago          Up 13 hours         0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp   happy_aryabhata
+[root@oc2717564268 ~]# 
+
